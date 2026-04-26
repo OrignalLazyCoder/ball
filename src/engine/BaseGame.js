@@ -323,7 +323,9 @@ export class BaseGame {
       return true
     })
 
-    const energy = Math.hypot(v.x, v.z) + Math.max(0, v.y)
+    // Hit detection: surge in horizontal energy. Y is intentionally ignored
+    // so jumps (especially the long-jump power-up) don't register as kicks.
+    const energy = Math.hypot(v.x, v.z)
     if (energy - this.lastBallEnergy > this.bigKickThreshold && this.invulnTimer <= 0) {
       this._takeHit()
     }
