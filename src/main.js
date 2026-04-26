@@ -87,6 +87,7 @@ async function startGame(GameClass) {
   hudEl.classList.add('visible')
   hintEl.classList.add('visible')
   crosshairEl.classList.add('visible')
+  document.body.classList.add('in-game')
 
   game?.dispose()
   game = new GameClass({
@@ -122,6 +123,7 @@ function backToMenu() {
   hintEl.classList.remove('visible')
   crosshairEl.classList.remove('visible')
   gameoverEl.classList.remove('visible')
+  document.body.classList.remove('in-game')
   menuEl.style.display = 'flex'
   buildGameGrid()       // refresh HI scores after each game
   refreshNameInput()
@@ -134,3 +136,37 @@ menuBtn.addEventListener('click', backToMenu)
 
 refreshNameInput()
 buildGameGrid()
+
+// ---------- Touch device setup ----------
+const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window)
+if (isTouch) document.body.classList.add('touch')
+
+// Wire touch action buttons. They dispatch into the active game's Input via
+// the engine — but we don't have direct access here, so we forward through
+// global window event helpers that Input listens to.
+function bindTouchButton(selector, opts) {
+  const btn = document.querySelector(selector)
+  if (!btn) return
+  const fire = (type) => {
+    if (!game?.engine?.input) return
+    const input = game.engine.input
+    if (opts.kind === 'tap' && type === 'down') input.virtualTap(opts.code)
+    if (opts.kind === 'hold') {
+      if (type === 'down') input.virtualKeyDown(opts.code)
+      else input.virtualKeyUp(opts.code)
+    }
+    if (opts.kind === 'hold' && opts.heldClass) {
+      btn.classList.toggle(opts.heldClass, type === 'down')
+    }
+  }
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); fire('down') }, { passive: false })
+  btn.addEventListener('touchend',   (e) => { e.preventDefault(); fire('up') },   { passive: false })
+  btn.addEventListener('touchcancel',(e) => { e.preventDefault(); fire('up') },   { passive: false })
+  btn.addEventListener('mousedown',  (e) => { e.preventDefault(); fire('down') })
+  btn.addEventListener('mouseup',    (e) => { e.preventDefault(); fire('up') })
+  btn.addEventListener('mouseleave', () => fire('up'))
+}
+
+bindTouchButton('.t-jump',   { kind: 'tap',  code: 'Space' })
+bindTouchButton('.t-cam',    { kind: 'tap',  code: 'KeyC' })
+bindTouchButton('.t-sprint', { kind: 'hold', code: 'ShiftLeft', heldClass: 'held' })

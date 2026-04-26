@@ -10,7 +10,10 @@
       :root { color-scheme: dark; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff;
-        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+        overscroll-behavior: none; touch-action: none; }
+      body.touch.in-game #app, body.touch.in-game canvas { touch-action: none; }
       #app { position: fixed; inset: 0; }
       canvas { display: block; width: 100%; height: 100%; }
 
@@ -206,6 +209,79 @@
         font-size: 0.8rem; opacity: 0.85; z-index: 5; display: none; white-space: nowrap;
       }
       #controls-hint.visible { display: block; }
+
+      /* ---------- Touch controls ---------- */
+      #touch-joystick, #touch-actions { display: none; }
+      body.touch.in-game #touch-joystick,
+      body.touch.in-game #touch-actions { display: block; }
+      #touch-actions { display: none; }
+      body.touch.in-game #touch-actions { display: flex; }
+
+      #touch-joystick {
+        position: fixed; left: 1.4rem; bottom: 1.4rem;
+        width: 130px; height: 130px; z-index: 7;
+        touch-action: none; user-select: none;
+        pointer-events: none;
+        opacity: 0.6; transition: opacity 0.15s;
+      }
+      #touch-joystick.active { opacity: 1; }
+      #touch-joystick .ring {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(0,0,0,0.4);
+        border: 2px solid rgba(74, 222, 128, 0.7);
+        box-shadow: 0 0 18px rgba(74, 222, 128, 0.3), inset 0 0 12px rgba(0,0,0,0.5);
+      }
+      #touch-joystick .thumb {
+        position: absolute; left: 50%; top: 50%;
+        width: 56px; height: 56px; margin: -28px 0 0 -28px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #6ee787 0%, #166534 100%);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+        transition: transform 0.05s linear;
+      }
+
+      #touch-actions {
+        position: fixed; right: 1.2rem; bottom: 1.2rem;
+        display: flex; flex-direction: column; gap: 0.7rem; z-index: 7;
+        touch-action: manipulation;
+      }
+      #touch-actions .t-btn {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: rgba(0,0,0,0.55); color: #fff;
+        border: 2px solid currentColor; cursor: pointer;
+        font-size: 1.7rem; font-family: inherit;
+        box-shadow: 0 0 14px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        transition: transform 0.08s, background 0.12s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #touch-actions .t-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.18); }
+      #touch-actions .t-jump   { color: #67e8f9; }
+      #touch-actions .t-sprint { color: #fde047; }
+      #touch-actions .t-sprint.held { background: rgba(253, 224, 71, 0.25); }
+      #touch-actions .t-cam    { color: #c084fc; }
+
+      /* ---------- Responsive layout ---------- */
+      @media (max-width: 700px) {
+        #menu .game-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+        #menu h1 { font-size: clamp(3.5rem, 22vw, 8rem); }
+        #menu .tagline { font-size: 0.7rem; letter-spacing: 0.4em; margin-bottom: 1.4rem; }
+        #menu .name-input input { width: 160px; font-size: 0.95rem; }
+        #menu .controls { font-size: 0.65rem; gap: 0.3rem 0.6rem; }
+        #hud { gap: 0.3rem; font-size: 0.65rem; letter-spacing: 0.08em; }
+        #hud .pill { padding: 0.32rem 0.55rem; }
+        #hud-score { font-size: 0.85rem !important; padding: 0.4rem 0.7rem !important; }
+        #hud-lives { font-size: 0.85rem !important; }
+        #effects-bar { top: auto !important; bottom: 8rem; left: 1rem; right: 1rem; }
+        #effects-bar .effect { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
+        #controls-hint { display: none !important; }   /* on-screen buttons replace it */
+        #back-btn { font-size: 0.7rem; padding: 0.35rem 0.6rem; }
+      }
+      @media (max-width: 420px) {
+        #menu .game-grid { grid-template-columns: 1fr; }
+        #touch-joystick { width: 110px; height: 110px; }
+        #touch-actions .t-btn { width: 62px; height: 62px; font-size: 1.5rem; }
+      }
       #hud-score { font-weight: 700; background: rgba(74, 222, 128, 0.25); }
 
       #effects-bar {
@@ -251,7 +327,7 @@
       }
       #gameover button.secondary { background: #444; color: #fff; }
     </style>
-    <script type="module" crossorigin src="./assets/index.dev-COPD3YOi.js"></script>
+    <script type="module" crossorigin src="./assets/index.dev-Dyd5qc_7.js"></script>
   </head>
   <body>
     <div id="app"></div>
@@ -297,6 +373,17 @@
 
     <div id="effects-bar"></div>
     <div id="controls-hint">WASD move · Space jump · Shift sprint · C camera · M mute</div>
+
+    <!-- Touch controls (auto-shown on coarse-pointer / small screens) -->
+    <div id="touch-joystick" aria-hidden="true">
+      <div class="ring"></div>
+      <div class="thumb"></div>
+    </div>
+    <div id="touch-actions" aria-hidden="true">
+      <button class="t-btn t-cam"    data-act="cam"    aria-label="Camera">👁</button>
+      <button class="t-btn t-sprint" data-act="sprint" aria-label="Sprint">⚡</button>
+      <button class="t-btn t-jump"   data-act="jump"   aria-label="Jump">⤴</button>
+    </div>
 
     <div id="gameover">
       <h2 id="go-title">KICKED OUT</h2>
