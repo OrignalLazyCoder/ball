@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && rm -rf assets && cp dist/index.dev.html index.html && cp -r dist/assets ./assets"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",
