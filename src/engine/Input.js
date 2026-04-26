@@ -7,7 +7,7 @@ export class Input {
     this.locked = false
 
     // Touch state
-    this.isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window)
+    this.isTouch = window.matchMedia('(pointer: coarse)').matches
     this._touchFwd = 0
     this._touchStrafe = 0
     this._joyTouchId = null

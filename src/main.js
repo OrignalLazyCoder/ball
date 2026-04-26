@@ -138,7 +138,9 @@ refreshNameInput()
 buildGameGrid()
 
 // ---------- Touch device setup ----------
-const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window)
+// Use (pointer: coarse) only — checking 'ontouchstart' in window false-positives
+// on Chrome desktop because touch APIs are present even without a touchscreen.
+const isTouch = window.matchMedia('(pointer: coarse)').matches
 if (isTouch) document.body.classList.add('touch')
 
 // Wire touch action buttons. They dispatch into the active game's Input via
