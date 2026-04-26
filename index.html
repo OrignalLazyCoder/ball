@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Ball</title>
+    <meta name="description" content="You are the ball. They are coming." />
+    <meta name="theme-color" content="#0a0e1a" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+      #app { position: fixed; inset: 0; }
+      canvas { display: block; width: 100%; height: 100%; }
+
+      #menu {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background:
+          radial-gradient(circle at 25% 20%, rgba(74, 222, 128, 0.18) 0%, transparent 45%),
+          radial-gradient(circle at 75% 80%, rgba(103, 232, 249, 0.15) 0%, transparent 45%),
+          radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.08) 0%, transparent 60%),
+          linear-gradient(135deg, #050810 0%, #0d0f1c 50%, #0a0a1a 100%);
+        z-index: 10; padding: 1.5rem 1rem; overflow-y: auto;
+      }
+      /* Subtle scanlines */
+      #menu::before {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: repeating-linear-gradient(
+          to bottom,
+          transparent, transparent 2px,
+          rgba(255,255,255,0.025) 2px, rgba(255,255,255,0.025) 3px
+        );
+        mix-blend-mode: screen; z-index: 0;
+      }
+      /* Decorative floating ball */
+      #menu .bg-ball {
+        position: absolute; right: -8vw; bottom: -10vw;
+        width: 38vw; height: 38vw; max-width: 540px; max-height: 540px;
+        border-radius: 50%; pointer-events: none; z-index: 0;
+        background: radial-gradient(circle at 35% 30%, #4ade80 0%, #166534 60%, #052010 100%);
+        box-shadow: 0 0 80px rgba(74,222,128,0.25), inset -30px -30px 80px rgba(0,0,0,0.6);
+        opacity: 0.45;
+        animation: floaty 14s ease-in-out infinite;
+      }
+      #menu .bg-ball.alt {
+        right: auto; left: -10vw; top: -10vw; bottom: auto;
+        background: radial-gradient(circle at 30% 30%, #67e8f9 0%, #0e7490 60%, #052e3a 100%);
+        box-shadow: 0 0 80px rgba(103,232,249,0.25), inset -30px -30px 80px rgba(0,0,0,0.6);
+        animation-delay: -7s; animation-duration: 18s;
+      }
+      @keyframes floaty {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50%      { transform: translate(-30px, -30px) rotate(180deg); }
+      }
+      #menu .menu-content {
+        position: relative; z-index: 1;
+        display: flex; flex-direction: column; align-items: center;
+        max-width: 760px; width: 100%;
+      }
+      #menu h1 {
+        font-family: 'Courier New', Menlo, Consolas, monospace;
+        font-weight: 900;
+        font-size: clamp(5rem, 18vw, 11rem);
+        letter-spacing: 0.08em;
+        line-height: 0.9;
+        background: linear-gradient(180deg, #ffffff 0%, #4ade80 55%, #16a34a 100%);
+        -webkit-background-clip: text; background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 36px rgba(74, 222, 128, 0.35);
+        margin-bottom: 0.4rem;
+        animation: title-glow 3.6s ease-in-out infinite;
+      }
+      @keyframes title-glow {
+        0%, 100% { filter: drop-shadow(0 0 12px rgba(74, 222, 128, 0.45)); }
+        50%      { filter: drop-shadow(0 0 28px rgba(74, 222, 128, 0.85)); }
+      }
+      #menu .tagline {
+        font-family: 'Courier New', Menlo, Consolas, monospace;
+        text-transform: uppercase; letter-spacing: 0.5em;
+        color: rgba(255,255,255,0.55);
+        font-size: 0.78rem;
+        margin-bottom: 2rem;
+        padding-left: 0.5em;  /* offset for letter-spacing */
+      }
+      #menu p { opacity: 0.7; margin-bottom: 1.5rem; font-size: 0.95rem; text-align: center; max-width: 460px; }
+
+      /* Player name input */
+      #menu .name-input {
+        display: flex; align-items: center; gap: 0.6rem;
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid rgba(74, 222, 128, 0.7);
+        padding: 0.55rem 1rem;
+        margin-bottom: 1.6rem;
+        font-family: 'Courier New', Menlo, Consolas, monospace;
+        text-transform: uppercase; letter-spacing: 0.18em;
+        box-shadow: 0 0 20px rgba(74, 222, 128, 0.18), inset 0 0 12px rgba(0,0,0,0.6);
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      #menu .name-input:focus-within {
+        border-color: #4ade80;
+        box-shadow: 0 0 28px rgba(74, 222, 128, 0.5), inset 0 0 12px rgba(0,0,0,0.6);
+      }
+      #menu .name-input .label {
+        color: #4ade80; font-size: 0.78rem; font-weight: 700;
+      }
+      #menu .name-input input {
+        background: transparent; border: none; outline: none;
+        color: #ffffff; font-family: inherit; font-size: 1.05rem; font-weight: 700;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        width: 220px; text-align: left;
+        caret-color: #4ade80;
+      }
+      #menu .name-input input::placeholder { color: rgba(255,255,255,0.25); }
+      #menu .controls {
+        display: grid; grid-template-columns: auto auto; gap: 0.4rem 1rem; opacity: 0.55; font-size: 0.78rem;
+        margin-top: 1.5rem;
+        font-family: 'Courier New', Menlo, Consolas, monospace;
+        text-transform: uppercase; letter-spacing: 0.1em;
+      }
+      #menu .game-grid {
+        display: grid; grid-template-columns: repeat(3, minmax(170px, 1fr)); gap: 0.7rem;
+        max-width: 640px; width: calc(100% - 2rem);
+      }
+      .game-tile {
+        background: rgba(0, 0, 0, 0.7); border: 2px solid #4ade80; color: #4ade80;
+        padding: 1.1rem 0.8rem; cursor: pointer; font-family: 'Courier New', Menlo, Consolas, monospace;
+        font-weight: 700; font-size: 0.95rem; letter-spacing: 0.12em; text-transform: uppercase;
+        text-shadow: 0 0 6px currentColor;
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.15), inset 0 0 8px rgba(0, 0, 0, 0.6);
+        transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+      .game-tile:hover {
+        transform: translateY(-2px);
+        background: rgba(74, 222, 128, 0.15);
+        box-shadow: 0 0 18px rgba(74, 222, 128, 0.55), inset 0 0 8px rgba(0, 0, 0, 0.6);
+      }
+      .game-tile .icon { font-size: 1.6rem; display: block; margin-bottom: 0.35rem; }
+      .game-tile .hi {
+        display: block; margin-top: 0.5rem;
+        font-size: 0.6rem; font-weight: 600; opacity: 0.7;
+        letter-spacing: 0.18em; color: rgba(255,255,255,0.6);
+        text-shadow: none;
+      }
+      .game-tile .hi b { color: currentColor; }
+      .game-tile.football    { color: #4ade80; border-color: #4ade80; }
+      .game-tile.basketball  { color: #fb923c; border-color: #fb923c; box-shadow: 0 0 12px rgba(251,146,60,0.18), inset 0 0 8px rgba(0,0,0,0.6); }
+      .game-tile.basketball:hover { box-shadow: 0 0 18px rgba(251,146,60,0.55), inset 0 0 8px rgba(0,0,0,0.6); background: rgba(251,146,60,0.12); }
+      .game-tile.cricket     { color: #ff4d6d; border-color: #ff4d6d; box-shadow: 0 0 12px rgba(255,77,109,0.18), inset 0 0 8px rgba(0,0,0,0.6); }
+      .game-tile.cricket:hover { box-shadow: 0 0 18px rgba(255,77,109,0.55), inset 0 0 8px rgba(0,0,0,0.6); background: rgba(255,77,109,0.12); }
+      .game-tile.tennis      { color: #fde047; border-color: #fde047; box-shadow: 0 0 12px rgba(253,224,71,0.18), inset 0 0 8px rgba(0,0,0,0.6); }
+      .game-tile.tennis:hover { box-shadow: 0 0 18px rgba(253,224,71,0.55), inset 0 0 8px rgba(0,0,0,0.6); background: rgba(253,224,71,0.12); }
+      .game-tile.tabletennis { color: #67e8f9; border-color: #67e8f9; box-shadow: 0 0 12px rgba(103,232,249,0.18), inset 0 0 8px rgba(0,0,0,0.6); }
+      .game-tile.tabletennis:hover { box-shadow: 0 0 18px rgba(103,232,249,0.55), inset 0 0 8px rgba(0,0,0,0.6); background: rgba(103,232,249,0.12); }
+      .game-tile.golf        { color: #a3e635; border-color: #a3e635; box-shadow: 0 0 12px rgba(163,230,53,0.18), inset 0 0 8px rgba(0,0,0,0.6); }
+      .game-tile.golf:hover { box-shadow: 0 0 18px rgba(163,230,53,0.55), inset 0 0 8px rgba(0,0,0,0.6); background: rgba(163,230,53,0.12); }
+
+      #hud {
+        position: fixed; top: 1rem; left: 1rem; right: 1rem; display: none;
+        justify-content: flex-start; pointer-events: none; z-index: 5;
+        gap: 0.45rem; flex-wrap: wrap;
+        font-family: 'Courier New', Menlo, Consolas, monospace;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+      }
+      #hud.visible { display: flex; }
+      #hud .pill {
+        background: rgba(0, 0, 0, 0.85);
+        border: 2px solid currentColor;
+        border-radius: 0;
+        padding: 0.42rem 0.7rem;
+        text-shadow: 0 0 6px currentColor;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5), inset 0 0 6px rgba(0,0,0,0.7);
+        line-height: 1;
+        white-space: nowrap;
+      }
+      #hud .label { font-size: 0.65rem; opacity: 0.7; margin-right: 0.3rem; letter-spacing: 0.18em; }
+
+      #hud-sport-pill { color: #c084fc; font-size: 0.85rem; }
+      #hud-player { color: #a3e635; }
+      #hud-lives   { color: #ff4d6d; font-size: 1rem; padding: 0.32rem 0.55rem; letter-spacing: 0.04em; }
+      #hud-score   { color: #fde047; font-size: 1.05rem; padding: 0.5rem 0.9rem; }
+      #hud-hi      { color: #67e8f9; font-size: 0.95rem; padding: 0.5rem 0.7rem; }
+      #hud-time    { color: #4ade80; }
+      #hud-kickers { color: #fb923c; }
+      #hud-kills   { color: #f472b6; }
+      #hud-dodges  { color: #a3e635; }
+      #hud-stamina { color: #60a5fa; }
+
+      #hud-lives.low { animation: heart-pulse 0.6s infinite; }
+      @keyframes heart-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%      { opacity: 0.5; transform: scale(1.06); }
+      }
+      #hud-score.beat-hi { animation: score-glow 0.8s infinite; }
+      @keyframes score-glow {
+        0%, 100% { text-shadow: 0 0 6px #fde047, 0 0 14px rgba(253, 224, 71, 0.6); }
+        50%      { text-shadow: 0 0 10px #fde047, 0 0 24px rgba(253, 224, 71, 1.0); }
+      }
+
+      #controls-hint {
+        position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.5); padding: 0.4rem 0.9rem; border-radius: 999px; backdrop-filter: blur(8px);
+        font-size: 0.8rem; opacity: 0.85; z-index: 5; display: none; white-space: nowrap;
+      }
+      #controls-hint.visible { display: block; }
+      #hud-score { font-weight: 700; background: rgba(74, 222, 128, 0.25); }
+
+      #effects-bar {
+        position: fixed; top: 4.2rem; left: 1rem; display: none; gap: 0.4rem;
+        flex-wrap: wrap; z-index: 5; pointer-events: none;
+      }
+      #effects-bar.visible { display: flex; }
+      #effects-bar .effect {
+        background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25);
+        padding: 0.35rem 0.7rem; border-radius: 6px; backdrop-filter: blur(8px);
+        font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem;
+        animation: fadeIn 0.2s ease;
+      }
+      #effects-bar .effect .bar {
+        width: 50px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden;
+      }
+      #effects-bar .effect .bar > div { height: 100%; transition: width 0.1s linear; }
+      #effects-bar .effect.fire      { color: #ff7044; box-shadow: 0 0 12px rgba(255,80,40,0.4); }
+      #effects-bar .effect.long_jump { color: #6ee7b7; }
+      #effects-bar .effect.speed     { color: #fde047; }
+      #effects-bar .effect.shield    { color: #67e8f9; }
+      #effects-bar .effect .bar > div { background: currentColor; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+      #crosshair {
+        position: fixed; top: 50%; left: 50%; width: 6px; height: 6px;
+        margin: -3px 0 0 -3px; background: rgba(255,255,255,0.7);
+        border-radius: 50%; pointer-events: none; z-index: 4; display: none;
+      }
+      #crosshair.visible { display: block; }
+
+      #gameover {
+        position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 8;
+      }
+      #gameover.visible { display: flex; }
+      #gameover h2 { font-size: clamp(2rem, 6vw, 3.5rem); margin-bottom: 0.5rem; }
+      #gameover .stats { font-size: 1rem; opacity: 0.85; margin-bottom: 1.5rem; text-align: center; }
+      #gameover button {
+        background: #4ade80; color: #062c14; border: none; padding: 0.7rem 1.5rem;
+        border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit;
+        margin: 0 0.4rem;
+      }
+      #gameover button.secondary { background: #444; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="crosshair"></div>
+
+    <div id="menu">
+      <div class="bg-ball"></div>
+      <div class="bg-ball alt"></div>
+      <div class="menu-content">
+        <h1>BALL</h1>
+        <div class="tagline">you are the ball</div>
+
+        <div class="name-input">
+          <span class="label">PLAYER →</span>
+          <input id="player-name" type="text" maxlength="12" placeholder="ENTER NAME" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="game-grid" id="game-grid"></div>
+
+        <div class="controls">
+          <span>WASD</span><span>Roll the ball</span>
+          <span>Space</span><span>Jump (over kicks!)</span>
+          <span>Shift</span><span>Sprint</span>
+          <span>C</span><span>1st / 3rd person</span>
+          <span>Mouse</span><span>Look around</span>
+          <span>M</span><span>Mute</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div class="pill" id="hud-sport-pill"><span id="hud-sport">⚽ FOOTBALL</span></div>
+      <div class="pill" id="hud-player"><span class="label">P1</span><span id="hud-player-name">PLAYER</span></div>
+      <div class="pill" id="hud-lives">♥♥♥♡♡</div>
+      <div class="pill"><span class="label">SCORE</span><span id="hud-score">0000000</span></div>
+      <div class="pill"><span class="label">HI</span><span id="hud-hi">0000000</span></div>
+      <div class="pill"><span class="label">TIME</span><span id="hud-time">000.0s</span></div>
+      <div class="pill"><span class="label">FOES</span><span id="hud-kickers">03↑</span></div>
+      <div class="pill"><span class="label">KO</span><span id="hud-kills">00</span></div>
+      <div class="pill"><span class="label">EVA</span><span id="hud-dodges">00</span></div>
+      <div class="pill"><span class="label">STM</span><span id="hud-stamina">100%</span></div>
+    </div>
+
+    <div id="effects-bar"></div>
+    <div id="controls-hint">WASD move · Space jump · Shift sprint · C camera · M mute</div>
+
+    <div id="gameover">
+      <h2 id="go-title">KICKED OUT</h2>
+      <div class="stats" id="go-stats">—</div>
+      <div>
+        <button id="go-retry">Play Again</button>
+        <button id="go-menu" class="secondary">Menu</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
